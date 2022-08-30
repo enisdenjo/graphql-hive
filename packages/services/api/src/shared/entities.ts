@@ -10,17 +10,42 @@ import type {
 } from '../__generated__/types';
 import { parse } from 'graphql';
 
-export interface Schema {
+interface CommonSchema {
   id: string;
   author: string;
-  source: string;
   date: string;
   commit: string;
   target: string;
-  url?: string | null;
-  service?: string | null;
-  metadata?: Record<string, any> | null;
 }
+
+export interface SingleSchema extends CommonSchema {
+  sdl: string;
+}
+
+export interface DeletedCompositeSchema extends CommonSchema {
+  service_name: string;
+  action: 'DELETE';
+}
+
+export interface AddedCompositeSchema extends CommonSchema {
+  sdl: string;
+  service_url: string | null;
+  service_name: string;
+  metadata: Record<string, any> | null;
+  action: 'ADD';
+}
+
+export interface ModifiedCompositeSchema extends CommonSchema {
+  sdl: string;
+  service_url: string | null;
+  service_name: string;
+  metadata: Record<string, any> | null;
+  action: 'MODIFY';
+}
+
+export type CompositeSchema = DeletedCompositeSchema | AddedCompositeSchema | ModifiedCompositeSchema;
+
+export type Schema = SingleSchema | CompositeSchema;
 
 export interface DateRange {
   from: Date;
@@ -29,7 +54,7 @@ export interface DateRange {
 
 export interface SchemaVersion {
   id: string;
-  valid: boolean;
+  isComposable: boolean;
   date: number;
   commit: string;
   base_schema: string | null;
@@ -61,11 +86,13 @@ export class GraphQLDocumentStringInvalidError extends Error {
   }
 }
 
-export function createSchemaObject(schema: Schema): SchemaObject {
+export function createSchemaObject(
+  schema: SingleSchema | AddedCompositeSchema | ModifiedCompositeSchema
+): SchemaObject {
   let document: DocumentNode;
 
   try {
-    document = parse(schema.source);
+    document = parse(schema.sdl);
   } catch (err) {
     if (err instanceof GraphQLError) {
       throw new GraphQLDocumentStringInvalidError(err.message, err.locations?.[0]);
@@ -75,9 +102,9 @@ export function createSchemaObject(schema: Schema): SchemaObject {
 
   return {
     document,
-    raw: schema.source,
-    source: schema.service ?? emptySource,
-    url: schema.url ?? null,
+    raw: schema.sdl,
+    source: 'service_name' in schema ? schema.service_name : emptySource,
+    url: 'service_url' in schema ? schema.service_url : null,
   };
 }
 

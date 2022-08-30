@@ -35,6 +35,10 @@ export default gql`
     Requires API Token
     """
     latestValidVersion: SchemaVersion!
+    """
+    Requires API Token
+    """
+    latestComposableVersion: SchemaVersion!
   }
 
   input DisableExternalSchemaCompositionInput {
@@ -190,13 +194,15 @@ export default gql`
   }
 
   type SchemaCheckSuccess {
-    valid: Boolean!
+    isComposable: Boolean!
+    valid: Boolean! @deprecated
     initial: Boolean!
     changes: SchemaChangeConnection
   }
 
   type SchemaCheckError {
-    valid: Boolean!
+    isComposable: Boolean!
+    valid: Boolean! @deprecated
     changes: SchemaChangeConnection
     errors: SchemaErrorConnection!
   }
@@ -219,14 +225,16 @@ export default gql`
 
   type SchemaPublishSuccess {
     initial: Boolean!
-    valid: Boolean!
+    isComposable: Boolean!
+    valid: Boolean! @deprecated
     linkToWebsite: String
     message: String
     changes: SchemaChangeConnection
   }
 
   type SchemaPublishError {
-    valid: Boolean!
+    isComposable: Boolean!
+    valid: Boolean! @deprecated
     linkToWebsite: String
     changes: SchemaChangeConnection
     errors: SchemaErrorConnection!
@@ -321,7 +329,8 @@ export default gql`
 
   type SchemaVersion {
     id: ID!
-    valid: Boolean!
+    isComposable: Boolean!
+    valid: Boolean! @deprecated
     date: DateTime!
     commit: Schema!
     baseSchema: String

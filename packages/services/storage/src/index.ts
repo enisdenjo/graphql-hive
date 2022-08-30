@@ -46,7 +46,6 @@ export { createConnectionString } from './db/utils';
 export { createTokenStorage } from './tokens';
 export type { tokens } from './db/types';
 
-export type WithUrl<T> = T & Pick<version_commit, 'url'>;
 export type WithMaybeMetadata<T> = T & {
   metadata?: string | null;
 };
@@ -158,34 +157,44 @@ export async function createStorage(connection: string, maximumPoolSize: number)
     };
   }
 
-  function transformSchema(
-    schema: WithUrl<
-      WithMaybeMetadata<
-        Pick<commits, 'id' | 'commit' | 'author' | 'content' | 'created_at' | 'project_id' | 'service' | 'target_id'>
-      >
-    >
-  ): Schema {
-    const record: Schema = {
+  function transformSchema(schema: commits): Schema {
+    const base = {
       id: schema.id,
       author: schema.author,
-      source: schema.content,
-      commit: schema.commit,
       date: schema.created_at as any,
-      service: schema.service,
-      url: schema.url,
+      commit: schema.commit,
       target: schema.target_id,
     };
-    if (schema.metadata != null) {
-      record.metadata = JSON.parse(schema.metadata);
+
+    if (schema.action === 'N/A') {
+      return {
+        ...base,
+        sdl: schema.sdl!,
+      };
     }
 
-    return record;
+    if (schema.action === 'DELETE') {
+      return {
+        ...base,
+        service_name: schema.service_name!,
+        action: 'DELETE',
+      };
+    }
+
+    return {
+      ...base,
+      sdl: schema.sdl!,
+      service_name: schema.service_name!,
+      service_url: schema.service_url ?? null,
+      metadata: schema.metadata ? JSON.parse(schema.metadata) : null,
+      action: 'ADD',
+    };
   }
 
   function transformSchemaVersion(version: versions): SchemaVersion {
     return {
       id: version.id,
-      valid: version.valid,
+      isComposable: version.is_composable,
       date: version.created_at as any,
       commit: version.commit_id,
       base_schema: version.base_schema,

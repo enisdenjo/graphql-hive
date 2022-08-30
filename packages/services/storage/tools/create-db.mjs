@@ -1,6 +1,7 @@
+/* eslint-disable */
 // @ts-check
 import pgpFactory from 'pg-promise';
-import cn from './db-connection-string.cjs';
+import cn from './db-connection-string.mjs';
 
 const pgp = pgpFactory();
 const db = pgp(cn('postgres'));
