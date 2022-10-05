@@ -1,6 +1,5 @@
 import { sql } from 'slonik';
 import { getPool, tokens, toDate } from './db';
-import type { Slonik } from './shared';
 
 export async function createTokenStorage(connection: string, maximumPoolSize: number) {
   const pool = await getPool(connection, maximumPoolSize);
@@ -10,7 +9,7 @@ export async function createTokenStorage(connection: string, maximumPoolSize: nu
       return pool.end();
     },
     async getTokens({ target }: { target: string }) {
-      const result = await pool.query<Slonik<tokens>>(
+      const result = await pool.query<tokens>(
         sql`
           SELECT * 
           FROM public.tokens 
@@ -24,7 +23,7 @@ export async function createTokenStorage(connection: string, maximumPoolSize: nu
       return result.rows;
     },
     async getToken({ token }: { token: string }) {
-      return pool.one<Slonik<tokens>>(
+      return pool.one<tokens>(
         sql`
           SELECT * 
           FROM public.tokens 
@@ -50,7 +49,7 @@ export async function createTokenStorage(connection: string, maximumPoolSize: nu
       organization: string;
       scopes: readonly string[];
     }) {
-      return pool.one<Slonik<tokens>>(
+      return pool.one<tokens>(
         sql`
           INSERT INTO public.tokens
             (name, token, token_alias, target_id, project_id, organization_id, scopes)

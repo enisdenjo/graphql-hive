@@ -6,7 +6,12 @@ export interface SchemaChangeNotificationInput {
     organization: Pick<Organization, 'id' | 'cleanId' | 'name'>;
     project: Pick<Project, 'id' | 'cleanId' | 'name'>;
     target: Pick<Target, 'id' | 'cleanId' | 'name'>;
-    schema: Pick<SchemaVersion, 'id' | 'commit' | 'valid'>;
+    schema: Pick<SchemaVersion, 'id' | 'commit' | 'isComposable'> & {
+      /**
+       * @deprecated use isComposable instead
+       */
+      valid: boolean;
+    };
     changes: Types.SchemaChange[];
     errors: Types.SchemaError[];
     initial: boolean;

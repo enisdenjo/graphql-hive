@@ -31,7 +31,7 @@ import { TargetManager } from '../target/providers/target-manager';
 import { AuthManager } from '../auth/providers/auth-manager';
 import { parseResolveInfo } from 'graphql-parse-resolve-info';
 import { z } from 'zod';
-import { SchemaHelper } from './providers/schema-helper';
+import { SchemaHelper, ensureSchemasWithSDL, ensureSchemaWithSDL, isAddedOrModified } from './providers/schema-helper';
 import type { WithSchemaCoordinatesUsage, WithGraphQLParentInfo } from '../../shared/mappers';
 import { createPeriod, parseDateRangeInput } from '../../shared/helpers';
 import { OperationsManager } from '../operations/providers/operations-manager';
@@ -213,32 +213,6 @@ export const resolvers: SchemaModule.Resolvers = {
         },
       };
     },
-    async schemaSyncCDN(_, { input }, { injector }) {
-      const translator = injector.get(IdTranslator);
-      const [organization, project, target] = await Promise.all([
-        translator.translateOrganizationId(input),
-        translator.translateProjectId(input),
-        translator.translateTargetId(input),
-      ]);
-
-      try {
-        await injector.get(SchemaPublisher).sync({
-          organization,
-          project,
-          target,
-        });
-
-        return {
-          __typename: 'SchemaSyncCDNSuccess',
-          message: 'CDN is now up to date with the latest version',
-        };
-      } catch (error) {
-        return {
-          __typename: 'SchemaSyncCDNError',
-          message: error instanceof Error ? error.message : 'Failed to sync with CDN',
-        };
-      }
-    },
     async disableExternalSchemaComposition(_, { input }, { injector }) {
       const translator = injector.get(IdTranslator);
       const [organization, project] = await Promise.all([
@@ -303,11 +277,11 @@ export const resolvers: SchemaModule.Resolvers = {
 
       return Promise.all([
         orchestrator.build(
-          schemasBefore.map(s => helper.createSchemaObject(s)),
+          ensureSchemasWithSDL(schemasBefore).map(s => helper.createSchemaObject(s)),
           project.externalComposition
         ),
         orchestrator.build(
-          schemasAfter.map(s => helper.createSchemaObject(s)),
+          ensureSchemasWithSDL(schemasAfter).map(s => helper.createSchemaObject(s)),
           project.externalComposition
         ),
       ]).catch(reason => {
@@ -357,12 +331,12 @@ export const resolvers: SchemaModule.Resolvers = {
       return Promise.all([
         schemasBefore.length
           ? orchestrator.build(
-              schemasBefore.map(s => helper.createSchemaObject(s)),
+              ensureSchemasWithSDL(schemasBefore).map(s => helper.createSchemaObject(s)),
               project.externalComposition
             )
           : null,
         orchestrator.build(
-          schemasAfter.map(s => helper.createSchemaObject(s)),
+          ensureSchemasWithSDL(schemasAfter).map(s => helper.createSchemaObject(s)),
           project.externalComposition
         ),
       ]).catch(reason => {
@@ -449,21 +423,25 @@ export const resolvers: SchemaModule.Resolvers = {
     },
   },
   SchemaVersion: {
-    commit(version, _, { injector }) {
-      return injector.get(SchemaManager).getCommit({
-        commit: version.commit,
-        organization: version.organization,
-        project: version.project,
-        target: version.target,
-      });
+    async commit(version, _, { injector }) {
+      return ensureSchemaWithSDL(
+        await injector.get(SchemaManager).getCommit({
+          commit: version.commit,
+          organization: version.organization,
+          project: version.project,
+          target: version.target,
+        })
+      );
     },
-    schemas(version, _, { injector }) {
-      return injector.get(SchemaManager).getCommits({
-        version: version.id,
-        organization: version.organization,
-        project: version.project,
-        target: version.target,
-      });
+    async schemas(version, _, { injector }) {
+      return ensureSchemasWithSDL(
+        await injector.get(SchemaManager).getCommits({
+          version: version.id,
+          organization: version.organization,
+          project: version.project,
+          target: version.target,
+        })
+      );
     },
     async supergraph(version, _, { injector }) {
       const project = await injector.get(ProjectManager).getProject({
@@ -479,12 +457,14 @@ export const resolvers: SchemaModule.Resolvers = {
       const orchestrator = schemaManager.matchOrchestrator(project.type);
       const helper = injector.get(SchemaHelper);
 
-      const schemas = await schemaManager.getCommits({
-        version: version.id,
-        organization: version.organization,
-        project: version.project,
-        target: version.target,
-      });
+      const schemas = ensureSchemasWithSDL(
+        await schemaManager.getCommits({
+          version: version.id,
+          organization: version.organization,
+          project: version.project,
+          target: version.target,
+        })
+      );
 
       return orchestrator.supergraph(
         schemas.map(s => helper.createSchemaObject(s)),
@@ -501,12 +481,14 @@ export const resolvers: SchemaModule.Resolvers = {
       const orchestrator = schemaManager.matchOrchestrator(project.type);
       const helper = injector.get(SchemaHelper);
 
-      const schemas = await schemaManager.getCommits({
-        version: version.id,
-        organization: version.organization,
-        project: version.project,
-        target: version.target,
-      });
+      const schemas = ensureSchemasWithSDL(
+        await schemaManager.getCommits({
+          version: version.id,
+          organization: version.organization,
+          project: version.project,
+          target: version.target,
+        })
+      );
 
       return (
         await orchestrator.build(
@@ -528,12 +510,14 @@ export const resolvers: SchemaModule.Resolvers = {
       const orchestrator = schemaManager.matchOrchestrator(project.type);
       const helper = injector.get(SchemaHelper);
 
-      const schemas = await schemaManager.getCommits({
-        version: version.id,
-        organization: version.organization,
-        project: version.project,
-        target: version.target,
-      });
+      const schemas = ensureSchemasWithSDL(
+        await schemaManager.getCommits({
+          version: version.id,
+          organization: version.organization,
+          project: version.project,
+          target: version.target,
+        })
+      );
 
       const schema = await orchestrator.build(
         schemas.map(s => helper.createSchemaObject(s)),
@@ -552,6 +536,13 @@ export const resolvers: SchemaModule.Resolvers = {
         },
       };
     },
+  },
+  Schema: {
+    source: schema => schema.sdl,
+    url: schema => (isAddedOrModified(schema) ? schema.service_url : null),
+    serviceUrl: schema => (isAddedOrModified(schema) ? schema.service_url : null),
+    service: schema => (isAddedOrModified(schema) ? schema.service_name : null),
+    serviceName: schema => (isAddedOrModified(schema) ? schema.service_name : null),
   },
   SchemaCompareError: {
     __isTypeOf(error) {

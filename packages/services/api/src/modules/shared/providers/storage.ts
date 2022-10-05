@@ -162,8 +162,8 @@ export interface Storage {
       }
     | never
   >;
-  getLatestValidVersion(_: TargetSelector): Promise<SchemaVersion | never>;
-  getMaybeLatestValidVersion(_: TargetSelector): Promise<SchemaVersion | null | never>;
+  getLatestComposableVersion(_: TargetSelector): Promise<SchemaVersion | never>;
+  getMaybeLatestComposableVersion(_: TargetSelector): Promise<SchemaVersion | null | never>;
   getLatestVersion(_: TargetSelector): Promise<SchemaVersion | never>;
   getMaybeLatestVersion(_: TargetSelector): Promise<SchemaVersion | null>;
 
@@ -203,7 +203,7 @@ export interface Storage {
 
   createVersion(
     _: {
-      valid: boolean;
+      isComposable: boolean;
       url?: string | null;
       commit: string;
       commits: string[];

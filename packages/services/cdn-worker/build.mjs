@@ -7,7 +7,7 @@ import { dirname } from 'path';
   const localBuild = !!process.env.BUILD_FOR_LOCAL;
   const outfile = localBuild ? '/dist/dev.js' : '/dist/worker.js';
 
-  await build({
+  const r = await build({
     entryPoints: [__dirname + (localBuild ? '/src/dev.ts' : '/src/index.ts')],
     bundle: true,
     platform: localBuild ? 'node' : 'browser',

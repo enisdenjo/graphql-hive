@@ -130,11 +130,14 @@ export default gql`
   type Schema {
     id: ID!
     author: String!
-    source: String!
+    source: String! @deprecated(reason: "Use 'sdl' instead")
+    sdl: String!
     date: DateTime!
     commit: ID!
-    url: String
-    service: String
+    url: String @deprecated(reason: "Use 'serviceUrl' instead")
+    serviceUrl: String
+    service: String @deprecated(reason: "Use 'serviceName' instead")
+    serviceName: String
     metadata: String
   }
 

@@ -2,7 +2,7 @@ import { Injectable, Inject, Scope, CONTEXT } from 'graphql-modules';
 import { parse } from 'graphql';
 import { Logger } from '../../../shared/providers/logger';
 import { sentry } from '../../../../shared/sentry';
-import { Orchestrator, ProjectType, SchemaObject } from '../../../../shared/entities';
+import { Orchestrator, ProjectType, SchemaObject, CompositeSchema } from '../../../../shared/entities';
 import { SchemaBuildError } from './errors';
 import { SCHEMA_SERVICE_CONFIG } from './tokens';
 import type { SchemaServiceConfig } from './tokens';
@@ -52,7 +52,7 @@ export class FederationOrchestrator implements Orchestrator {
   }
 
   @sentry('FederationOrchestrator.validate')
-  async validate(schemas: SchemaObject[], external: ExternalComposition) {
+  async validate(schemas: readonly SchemaObject[], external: ExternalComposition) {
     this.logger.debug('Validating Federated Schemas');
 
     const result = await this.schemaService.mutation('validate', {
@@ -68,7 +68,7 @@ export class FederationOrchestrator implements Orchestrator {
   }
 
   @sentry('FederationOrchestrator.build')
-  async build(schemas: SchemaObject[], external: ExternalComposition): Promise<SchemaObject> {
+  async build(schemas: readonly SchemaObject[], external: ExternalComposition): Promise<SchemaObject> {
     this.logger.debug('Building Federated Schemas');
 
     try {
@@ -92,7 +92,7 @@ export class FederationOrchestrator implements Orchestrator {
   }
 
   @sentry('FederationOrchestrator.supergraph')
-  async supergraph(schemas: SchemaObject[], external: ExternalComposition): Promise<string | null> {
+  async supergraph(schemas: readonly SchemaObject[], external: ExternalComposition): Promise<string | null> {
     this.logger.debug('Generating Federated Supergraph');
 
     const result = await this.schemaService.mutation('supergraph', {

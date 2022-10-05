@@ -37,7 +37,7 @@ export class SingleOrchestrator implements Orchestrator {
   ensureConfig() {}
 
   @sentry('SingleOrchestrator.validate')
-  async validate(schemas: SchemaObject[]) {
+  async validate(schemas: readonly SchemaObject[]) {
     this.logger.debug('Validating Single Schema');
     if (schemas.length > 1) {
       this.logger.debug('More than one schema (sources=%o)', {
@@ -59,7 +59,7 @@ export class SingleOrchestrator implements Orchestrator {
   }
 
   @sentry('SingleOrchestrator.build')
-  async build(schemas: SchemaObject[]) {
+  async build(schemas: readonly SchemaObject[]) {
     try {
       if (schemas.length > 1) {
         this.logger.error('More than one schema (sources=%o)', {

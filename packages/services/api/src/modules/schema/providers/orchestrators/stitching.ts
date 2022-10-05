@@ -36,7 +36,7 @@ export class StitchingOrchestrator implements Orchestrator {
   ensureConfig() {}
 
   @sentry('StitchingOrchestrator.validate')
-  async validate(schemas: SchemaObject[]) {
+  async validate(schemas: readonly SchemaObject[]) {
     this.logger.debug('Validating Stitched Schemas');
 
     const result = await this.schemaService.mutation('validate', {
@@ -52,7 +52,7 @@ export class StitchingOrchestrator implements Orchestrator {
   }
 
   @sentry('StitchingOrchestrator.build')
-  async build(schemas: SchemaObject[]): Promise<SchemaObject> {
+  async build(schemas: readonly SchemaObject[]): Promise<SchemaObject> {
     this.logger.debug('Building Stitched Schemas');
     try {
       const result = await this.schemaService.mutation('build', {

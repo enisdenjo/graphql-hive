@@ -1,6 +1,7 @@
 import { Injectable, Scope } from 'graphql-modules';
-import { Orchestrator, Schema, SchemaObject, Project } from '../../../shared/entities';
-import { buildSchema, findSchema, hashSchema } from '../../../shared/schema';
+import { parse, concatAST } from 'graphql';
+import { Orchestrator, SchemaObject, Project } from '../../../shared/entities';
+import { buildSchema, hashSchema } from '../../../shared/schema';
 import * as Types from '../../../__generated__/types';
 import { Logger } from '../../shared/providers/logger';
 import { sentry } from '../../../shared/sentry';
@@ -9,6 +10,7 @@ import { Inspector } from './inspector';
 
 export type ValidationResult = {
   valid: boolean;
+  isComposable: boolean;
   errors: Array<Types.SchemaError>;
   changes: Array<Types.SchemaChange>;
 };
@@ -28,6 +30,8 @@ export class SchemaValidator {
     orchestrator,
     selector,
     incoming,
+    existing,
+    isInitial,
     before,
     after,
     baseSchema,
@@ -35,57 +39,51 @@ export class SchemaValidator {
     project,
   }: {
     orchestrator: Orchestrator;
-    incoming: Schema;
-    before: readonly Schema[];
-    after: readonly Schema[];
+    isInitial: boolean;
+    incoming: SchemaObject;
+    existing: SchemaObject | null;
+    before: readonly SchemaObject[];
+    after: readonly SchemaObject[];
     selector: Types.TargetSelector;
     baseSchema: string | null;
     experimental_acceptBreakingChanges: boolean;
     project: Project;
   }): Promise<ValidationResult> {
     this.logger.debug('Validating Schema');
-    const existing = findSchema(before, incoming);
-    const afterWithBase = after.map((schema, index) => {
-      let source = '';
-      if (index === 0) {
-        source = (baseSchema || '') + schema.source;
-      } else {
-        source = schema.source;
-      }
-      return {
-        id: schema.id,
-        author: schema.author,
-        source: source,
-        date: schema.date,
-        commit: schema.commit,
-        url: schema.url,
-        service: schema.service,
-        target: schema.target,
-      };
-    });
-    const afterSchemasWithBase: SchemaObject[] = afterWithBase.map(s => this.helper.createSchemaObject(s));
-    const afterSchemas: SchemaObject[] = after.map(s => this.helper.createSchemaObject(s));
-    const beforeSchemas: SchemaObject[] = before.map(s => this.helper.createSchemaObject(s));
+    const afterWithBase = baseSchema
+      ? after.map((schema, index) => {
+          if (index === 0) {
+            return {
+              ...schema,
+              source: (baseSchema || '') + schema.source,
+              document: concatAST([parse(baseSchema || ''), schema.document]),
+            };
+          } else {
+            return schema;
+          }
+        })
+      : after;
 
-    const isInitialSchema = beforeSchemas.length === 0;
     const areIdentical = existing && hashSchema(existing) === hashSchema(incoming);
 
     if (areIdentical) {
       return {
         valid: true,
+        isComposable: true,
         errors: [],
         changes: [],
       };
     }
 
     const errors = await orchestrator.validate(
-      afterSchemasWithBase,
+      afterWithBase,
       project.externalComposition.enabled ? project.externalComposition : null
     );
 
-    if (isInitialSchema) {
+    if (isInitial) {
       return {
         valid: errors.length === 0,
+        isComposable: errors.length === 0,
         errors: errors,
         changes: [],
       };
@@ -95,8 +93,8 @@ export class SchemaValidator {
 
     try {
       const [existingSchema, incomingSchema] = await Promise.all([
-        orchestrator.build(beforeSchemas, project.externalComposition),
-        orchestrator.build(afterSchemas, project.externalComposition),
+        orchestrator.build(before, project.externalComposition),
+        orchestrator.build(after, project.externalComposition),
       ]);
       if (existingSchema) {
         changes = await this.inspector.diff(buildSchema(existingSchema), buildSchema(incomingSchema), selector);
@@ -129,6 +127,7 @@ export class SchemaValidator {
 
     return {
       valid,
+      isComposable: valid,
       errors,
       changes,
     };

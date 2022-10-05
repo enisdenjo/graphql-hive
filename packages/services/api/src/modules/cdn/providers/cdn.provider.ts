@@ -8,7 +8,7 @@ import { sentry } from '../../../shared/sentry';
 import { CDN_CONFIG } from './tokens';
 import type { CDNConfig } from './tokens';
 
-type CdnResourceType = 'schema' | 'supergraph' | 'metadata';
+export type CdnResourceType = 'schema' | 'supergraph' | 'metadata';
 
 @Injectable({
   scope: Scope.Singleton,

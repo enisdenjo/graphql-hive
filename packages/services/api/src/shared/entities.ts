@@ -1,4 +1,5 @@
 import { DocumentNode, GraphQLError, SourceLocation } from 'graphql';
+import { z } from 'zod';
 import type {
   SchemaError,
   AlertChannelType,
@@ -10,42 +11,75 @@ import type {
 } from '../__generated__/types';
 import { parse } from 'graphql';
 
-interface CommonSchema {
-  id: string;
-  author: string;
-  date: string;
-  commit: string;
-  target: string;
-}
+export const SingleSchemaModel = z
+  .object({
+    id: z.string(),
+    author: z.string(),
+    date: z.string(),
+    commit: z.string(),
+    target: z.string(),
+    sdl: z.string(),
+  })
+  .required();
 
-export interface SingleSchema extends CommonSchema {
-  sdl: string;
-}
+export type SingleSchema = z.infer<typeof SingleSchemaModel>;
 
-export interface DeletedCompositeSchema extends CommonSchema {
-  service_name: string;
-  action: 'DELETE';
-}
+export const DeletedCompositeSchemaModel = z
+  .object({
+    id: z.string(),
+    author: z.string(),
+    date: z.string(),
+    commit: z.string(),
+    target: z.string(),
+    service_name: z.string(),
+    action: z.literal('DELETE'),
+  })
+  .required();
 
-export interface AddedCompositeSchema extends CommonSchema {
-  sdl: string;
-  service_url: string | null;
-  service_name: string;
-  metadata: Record<string, any> | null;
-  action: 'ADD';
-}
+export type DeletedCompositeSchema = z.infer<typeof DeletedCompositeSchemaModel>;
 
-export interface ModifiedCompositeSchema extends CommonSchema {
-  sdl: string;
-  service_url: string | null;
-  service_name: string;
-  metadata: Record<string, any> | null;
-  action: 'MODIFY';
-}
+export const AddedCompositeSchemaModel = z
+  .object({
+    id: z.string(),
+    author: z.string(),
+    date: z.string(),
+    commit: z.string(),
+    target: z.string(),
+    sdl: z.string(),
+    service_name: z.string(),
+    service_url: z.string().nullable(),
+    action: z.literal('ADD'),
+    metadata: z.any().optional(),
+  })
+  .required();
 
-export type CompositeSchema = DeletedCompositeSchema | AddedCompositeSchema | ModifiedCompositeSchema;
+export type AddedCompositeSchema = z.infer<typeof AddedCompositeSchemaModel>;
 
+export const ModifiedCompositeSchemaModel = z
+  .object({
+    id: z.string(),
+    author: z.string(),
+    date: z.string(),
+    commit: z.string(),
+    target: z.string(),
+    sdl: z.string(),
+    service_name: z.string(),
+    service_url: z.string().nullable(),
+    action: z.literal('MODIFY'),
+    metadata: z.any().optional(),
+  })
+  .required();
+
+export type ModifiedCompositeSchema = z.infer<typeof ModifiedCompositeSchemaModel>;
+
+export const CompositeSchemaModel = z.union([
+  DeletedCompositeSchemaModel,
+  AddedCompositeSchemaModel,
+  ModifiedCompositeSchemaModel,
+]);
+export type CompositeSchema = z.infer<typeof CompositeSchemaModel>;
 export type Schema = SingleSchema | CompositeSchema;
+export type SchemaWithSDL = SingleSchema | AddedCompositeSchema | ModifiedCompositeSchema;
 
 export interface DateRange {
   from: Date;
@@ -166,11 +200,17 @@ export interface Project {
   buildUrl?: string | null;
   validationUrl?: string | null;
   gitRepository?: string | null;
-  externalComposition: {
-    enabled: boolean;
-    endpoint?: string | null;
-    encryptedSecret?: string | null;
-  };
+  externalComposition:
+    | {
+        enabled: true;
+        endpoint: string;
+        encryptedSecret: string;
+      }
+    | {
+        enabled: false;
+        endpoint: null;
+        encryptedSecret: null;
+      };
 }
 
 export interface Target {
@@ -223,9 +263,9 @@ export interface TargetSettings {
 
 export interface Orchestrator {
   ensureConfig(config: any): void | never;
-  validate(schemas: SchemaObject[], config: any): Promise<SchemaError[]>;
-  build(schemas: SchemaObject[], config: any): Promise<SchemaObject>;
-  supergraph(schemas: SchemaObject[], config: any): Promise<string | null>;
+  validate(schemas: readonly SchemaObject[], config: any): Promise<SchemaError[]>;
+  build(schemas: readonly SchemaObject[], config: any): Promise<SchemaObject>;
+  supergraph(schemas: readonly SchemaObject[], config: any): Promise<string | null>;
 }
 
 export interface ActivityObject {

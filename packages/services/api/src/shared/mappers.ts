@@ -17,6 +17,7 @@ import type {
   Organization,
   PersistedOperation,
   Project,
+  SchemaWithSDL,
   SchemaObject,
   SchemaVersion as SchemaVersionEntity,
   Target,
@@ -104,13 +105,7 @@ export type SchemaComparePayload =
       message: string;
     };
 export type SchemaCompareResult = readonly [SchemaObject, SchemaObject] | readonly [undefined | null, SchemaObject];
-export interface Schema {
-  id: string;
-  author: string;
-  source: string;
-  date: string;
-  service?: string | null;
-}
+export type Schema = SchemaWithSDL;
 
 export interface OperationsStats {
   organization: string;

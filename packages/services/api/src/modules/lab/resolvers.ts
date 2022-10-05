@@ -4,7 +4,7 @@ import { SchemaManager } from '../schema/providers/schema-manager';
 import { ProjectManager } from '../project/providers/project-manager';
 import { AuthManager } from '../auth/providers/auth-manager';
 import { TargetAccessScope } from '../auth/providers/target-access';
-import { SchemaHelper } from '../schema/providers/schema-helper';
+import { SchemaHelper, isSchemaWithSDL } from '../schema/providers/schema-helper';
 
 export const resolvers: LabModule.Resolvers = {
   Query: {
@@ -52,7 +52,7 @@ export const resolvers: LabModule.Resolvers = {
       const helper = injector.get(SchemaHelper);
 
       const schema = await orchestrator.build(
-        schemas.map(s => helper.createSchemaObject(s)),
+        schemas.filter(isSchemaWithSDL).map(s => helper.createSchemaObject(s)),
         externalComposition
       );
 

@@ -219,6 +219,7 @@ export class AlertsManager {
         id: event.schema.id,
         commit: event.schema.commit,
         valid: event.schema.valid,
+        isComposable: event.schema.isComposable,
       },
       changes: event.changes,
       errors: event.errors,

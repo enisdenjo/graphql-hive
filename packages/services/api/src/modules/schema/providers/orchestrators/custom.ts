@@ -47,7 +47,7 @@ export class CustomOrchestrator implements Orchestrator {
   }
 
   @sentry('CustomOrchestrator.validate')
-  async validate(schemas: SchemaObject[], config: CustomOrchestratorConfig): Promise<SchemaError[]> {
+  async validate(schemas: readonly SchemaObject[], config: CustomOrchestratorConfig): Promise<SchemaError[]> {
     this.logger.debug('Validating Custom Schemas');
     return this.http.post(config.validationUrl, {
       responseType: 'json',
@@ -63,7 +63,7 @@ export class CustomOrchestrator implements Orchestrator {
   }
 
   @sentry('CustomOrchestrator.build')
-  async build(schemas: SchemaObject[], config: CustomOrchestratorConfig): Promise<SchemaObject> {
+  async build(schemas: readonly SchemaObject[], config: CustomOrchestratorConfig): Promise<SchemaObject> {
     this.logger.debug('Building Custom Schema');
     try {
       const response = await this.http.post<BuildResponse>(config.buildUrl, {
