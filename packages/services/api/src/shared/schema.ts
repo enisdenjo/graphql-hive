@@ -18,7 +18,11 @@ import {
 import { SchemaObject } from './entities';
 
 export function hashSchema(schema: SchemaObject): string {
-  return createHash('md5').update(schema.source, 'utf-8').digest('hex');
+  return createHash('md5')
+    .update(schema.raw, 'utf-8')
+    .update(`service_name: ${schema.source}`)
+    .update(`service_url: ${schema.url || ''}`)
+    .digest('hex');
 }
 
 /**

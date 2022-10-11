@@ -35,7 +35,7 @@ function main() {
         throw new Error(`Missing body value`);
       }
 
-      console.log(`Writing to ephermal storage: ${request.params.key}, value: ${request.body}`);
+      console.log(`Writing to ephermal storage: ${request.params.key}, value: ${textBody}`);
 
       devStorage.set(request.params.key, textBody);
 

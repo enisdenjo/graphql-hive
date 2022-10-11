@@ -198,6 +198,7 @@ export interface Storage {
       service?: string | null;
       url?: string | null;
       metadata: string | null;
+      action: 'ADD' | 'MODIFY' | 'N/A';
     } & TargetSelector
   ): Promise<Schema | never>;
 

@@ -49,10 +49,12 @@ export class CompositeProject {
 
   async check({
     input,
+    experimental_acceptBreakingChanges,
     project,
     currentSchemas,
   }: {
     project: Project;
+    experimental_acceptBreakingChanges: boolean;
     input: Pick<CheckInput, 'target' | 'sdl' | 'service' | 'organization' | 'project'>;
     currentSchemas: Schema[];
   }) {
@@ -60,14 +62,14 @@ export class CompositeProject {
     const schemas = ensureCompositeSchemas(currentSchemas);
     const action = serviceExists(schemas, input.service!) ? 'MODIFY' : 'ADD';
     const incoming: AddedCompositeSchema | ModifiedCompositeSchema = {
-      id: 'temp',
-      author: 'temp',
-      commit: 'temp',
+      id: 'temp-composite-id',
+      author: 'temp-composite-author',
+      commit: 'temp-composite-commit',
       target: input.target,
-      date: new Date().toISOString(),
+      date: Date.now(),
       sdl: input.sdl,
       service_name: input.service!,
-      service_url: 'temp',
+      service_url: 'temp-composite-service-url',
       action,
     };
 
@@ -105,7 +107,7 @@ export class CompositeProject {
         target: input.target,
       },
       baseSchema,
-      experimental_acceptBreakingChanges: false,
+      experimental_acceptBreakingChanges,
       project,
     });
 
@@ -157,21 +159,7 @@ export class CompositeProject {
       };
     }
 
-    if (this.supportsMetadata(project)) {
-      if (input.metadata) {
-        try {
-          JSON.parse(input.metadata);
-        } catch (e) {
-          throw new Error(`Failed to parse schema metadata JSON: ${e instanceof Error ? e.message : e}`);
-        }
-      }
-    }
-
-    const {
-      validationResult,
-      isInitial,
-      artifacts: { previousService, schemas, schemaObjects },
-    } = await this.check({
+    const { validationResult, isInitial, artifacts } = await this.check({
       input: {
         organization: input.organization,
         project: input.project,
@@ -179,6 +167,7 @@ export class CompositeProject {
         sdl: input.sdl,
         service: serviceName,
       },
+      experimental_acceptBreakingChanges: input.experimental_acceptBreakingChanges === true,
       project,
       currentSchemas,
     }).catch(async error => {
@@ -188,16 +177,33 @@ export class CompositeProject {
       throw error;
     });
 
+    const previousService = artifacts.previousService;
+
     const incoming: AddedCompositeSchema | ModifiedCompositeSchema = {
       action: previousService ? 'MODIFY' : 'ADD',
-      id: 'new-schema',
+      id: 'temp-composite-id',
       author: input.author,
       sdl: input.sdl,
       service_name: serviceName,
       service_url: serviceUrl ?? null,
       commit: input.commit,
       target: target.id,
-      date: new Date().toISOString(),
+      date: Date.now(),
+      metadata: this.supportsMetadata(project) ? this.helper.ensureJSONMetadata(input.metadata) : null,
+    };
+
+    const schemas = {
+      before: artifacts.schemas.before,
+      after: artifacts.schemas.after.map(s => {
+        if (s.id === incoming.id) {
+          return incoming;
+        }
+        return s;
+      }),
+    };
+    const schemaObjects = {
+      before: artifacts.schemaObjects.before,
+      after: schemas.after.filter(isAddedOrModified).map(s => this.helper.createSchemaObject(s)),
     };
 
     const { changes, errors, valid } = validationResult;

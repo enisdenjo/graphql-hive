@@ -24,6 +24,8 @@ export interface ClickHouseConfig {
   port: number;
   username: string;
   password: string;
+  async_insert_busy_timeout_ms?: number;
+  async_insert_max_data_size?: number;
 }
 
 const operationsFields = operationsOrder.join(', ');
@@ -149,8 +151,8 @@ async function writeCsv(
         query,
         async_insert: 1,
         wait_for_async_insert: 0,
-        async_insert_busy_timeout_ms: 30_000,
-        async_insert_max_data_size: 200_000_000,
+        async_insert_busy_timeout_ms: config.async_insert_busy_timeout_ms ?? 200,
+        async_insert_max_data_size: config.async_insert_max_data_size ?? 100_000,
       },
       username: config.username,
       password: config.password,

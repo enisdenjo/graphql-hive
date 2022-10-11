@@ -1,15 +1,7 @@
 import { Injectable, Inject, Scope } from 'graphql-modules';
 import lodash from 'lodash';
 import type { Span } from '@sentry/types';
-import {
-  Schema,
-  SchemaWithSDL,
-  Target,
-  Project,
-  ProjectType,
-  Orchestrator,
-  GraphQLDocumentStringInvalidError,
-} from '../../../shared/entities';
+import { Schema, SchemaWithSDL, Target, Project, ProjectType } from '../../../shared/entities';
 import * as Types from '../../../__generated__/types';
 import { ProjectManager } from '../../project/providers/project-manager';
 import { Logger } from '../../shared/providers/logger';
@@ -94,18 +86,25 @@ export class SchemaPublisher {
       }),
     ]);
 
+    await this.schemaManager.completeGetStartedCheck({
+      organization: project.orgId,
+      step: 'checkingSchema',
+    });
+
     const { validationResult, isInitial } =
       project.type === ProjectType.FEDERATION || project.type === ProjectType.STITCHING
         ? await this.composite.check({
             input,
             project,
             currentSchemas: latestSchemas.schemas,
+            experimental_acceptBreakingChanges: false,
           })
         : project.type === ProjectType.SINGLE
         ? await this.single.check({
             input,
             project,
             currentSchemas: latestSchemas.schemas,
+            experimental_acceptBreakingChanges: false,
           })
         : await Promise.reject(new Error(`Not implemented: ${project.type}`));
 
@@ -179,6 +178,61 @@ export class SchemaPublisher {
       ttl: 60,
       span,
     });
+  }
+
+  @sentry('SchemaPublisher.sync')
+  public async sync(selector: TargetSelector, span?: Span) {
+    this.logger.info('Syncing CDN with DB (target=%s)', selector.target);
+    await this.authManager.ensureTargetAccess({
+      target: selector.target,
+      project: selector.project,
+      organization: selector.organization,
+      scope: TargetAccessScope.REGISTRY_WRITE,
+    });
+    try {
+      const [latestVersion, project, target] = await Promise.all([
+        this.schemaManager.getLatestValidVersion(selector),
+        this.projectManager.getProject({
+          organization: selector.organization,
+          project: selector.project,
+        }),
+        this.targetManager.getTarget({
+          organization: selector.organization,
+          project: selector.project,
+          target: selector.target,
+        }),
+      ]);
+
+      const schemas = ensureSchemasWithSDL(
+        await this.schemaManager.getSchemasOfVersion({
+          organization: selector.organization,
+          project: selector.project,
+          target: selector.target,
+          version: latestVersion.id,
+          includeMetadata: true,
+        })
+      );
+
+      this.logger.info('Deploying version to CDN (version=%s)', latestVersion.id);
+      await this.updateCDN(
+        {
+          target,
+          project,
+          supergraph:
+            project.type === ProjectType.FEDERATION
+              ? await this.schemaManager.matchOrchestrator(project.type).supergraph(
+                  schemas.map(s => this.helper.createSchemaObject(s)),
+                  project.externalComposition
+                )
+              : null,
+          schemas,
+        },
+        span
+      );
+    } catch (error) {
+      this.logger.error(`Failed to sync with CDN ` + String(error), error);
+      throw error;
+    }
   }
 
   public async updateVersionStatus(input: TargetSelector & { version: string; valid: boolean }) {
@@ -353,31 +407,30 @@ export class SchemaPublisher {
 
     let newVersionId: string | null = null;
 
-    // if the schema is valid or the user is forcing the publish, we can go ahead and publish
-    if (action === 'PUBLISH') {
-      this.logger.debug('Publishing new version');
-      const newVersion = await this.publishNewVersion({
-        input,
-        valid,
-        schemas: schemas.after,
-        newSchema: service.after,
-        organizationId,
+    // if the schema is valid or the user is forcing the publish, we can go ahead and publish it
+    this.logger.debug('Publishing new version');
+    const newVersion = await this.publishNewVersion({
+      input,
+      valid,
+      schemas: schemas.after,
+      newSchema: service.after,
+      organizationId,
+      target,
+      project,
+      changes,
+      errors,
+      initial: isInitial,
+      action: 'action' in service.after ? service.after.action : 'N/A',
+    });
+
+    newVersionId = newVersion.id;
+
+    if (cdn) {
+      await this.publishToCDN({
         target,
         project,
-        changes,
-        errors,
-        initial: isInitial,
+        ...cdn,
       });
-
-      newVersionId = newVersion.id;
-
-      if (cdn) {
-        await this.publishToCDN({
-          target,
-          project,
-          ...cdn,
-        });
-      }
     }
 
     if (input.github) {
@@ -437,6 +490,7 @@ export class SchemaPublisher {
     changes,
     errors,
     initial,
+    action,
   }: {
     valid: boolean;
     input: PublishInput;
@@ -448,6 +502,7 @@ export class SchemaPublisher {
     changes: Types.SchemaChange[];
     errors: Types.SchemaError[];
     initial: boolean;
+    action: 'ADD' | 'MODIFY' | 'N/A';
   }) {
     const commits = schemas
       .filter(s => s.id !== newSchema.id) // do not include the incoming schema
@@ -473,6 +528,7 @@ export class SchemaPublisher {
         url: input.url,
         base_schema: baseSchema,
         metadata: input.metadata ?? null,
+        action,
       }),
       this.organizationManager.getOrganization({
         organization: organizationId,

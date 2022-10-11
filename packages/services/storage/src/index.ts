@@ -174,6 +174,7 @@ export async function createStorage(connection: string, maximumPoolSize: number)
     if (schema.action === 'N/A') {
       return {
         ...base,
+        metadata: 'metadata' in schema && schema.metadata ? JSON.parse(schema.metadata) : null,
         sdl: schema.sdl!,
       };
     }
@@ -1078,10 +1079,10 @@ export async function createStorage(connection: string, maximumPoolSize: number)
       >(
         sql`
           SELECT 
-            id
-            is_composable
-            created_at
-            commit_id
+            id,
+            is_composable,
+            created_at,
+            commit_id,
             base_schema
           FROM public.versions
           WHERE target_id = ${target} AND is_composable IS TRUE
@@ -1108,13 +1109,13 @@ export async function createStorage(connection: string, maximumPoolSize: number)
       >(
         sql`
           SELECT 
-            id
-            is_composable
-            created_at
-            commit_id
+            id,
+            is_composable,
+            created_at,
+            commit_id,
             base_schema
           FROM public.versions
-          WHERE target_id = ${target} AND valid IS TRUE
+          WHERE target_id = ${target} AND is_composable IS TRUE
           ORDER BY created_at DESC
           LIMIT 1
         `
@@ -1134,10 +1135,10 @@ export async function createStorage(connection: string, maximumPoolSize: number)
       >(
         sql`
           SELECT 
-            id
-            is_composable
-            created_at
-            commit_id
+            id,
+            is_composable,
+            created_at,
+            commit_id,
             base_schema
           FROM public.versions
           WHERE target_id = ${target}
@@ -1161,10 +1162,10 @@ export async function createStorage(connection: string, maximumPoolSize: number)
       >(
         sql`
           SELECT
-            id
-            is_composable
-            created_at
-            commit_id
+            id,
+            is_composable,
+            created_at,
+            commit_id,
             base_schema
           FROM public.versions
           WHERE target_id = ${target}
@@ -1331,7 +1332,7 @@ export async function createStorage(connection: string, maximumPoolSize: number)
         hasMore,
       };
     },
-    async insertSchema({ schema, commit, author, project, target, service = null, url = null, metadata }) {
+    async insertSchema({ schema, commit, author, project, target, service = null, url = null, metadata, action }) {
       const result = await pool.one<commits>(sql`
         INSERT INTO public.commits
           (
@@ -1339,10 +1340,11 @@ export async function createStorage(connection: string, maximumPoolSize: number)
             service_name,
             service_url,
             commit,
-            content,
+            sdl,
             project_id,
             target_id,
-            metadata
+            metadata,
+            action
           )
         VALUES
           (
@@ -1353,7 +1355,8 @@ export async function createStorage(connection: string, maximumPoolSize: number)
             ${schema}::text,
             ${project},
             ${target},
-            ${metadata}
+            ${metadata},
+            ${action}
           )
         RETURNING *
       `);
@@ -1435,7 +1438,7 @@ export async function createStorage(connection: string, maximumPoolSize: number)
       return transformSchemaVersion(
         await pool.one<versions>(sql`
           UPDATE public.versions
-          SET valid = ${valid}
+          SET is_composable = ${valid}
           WHERE id = ${version}
           RETURNING *
         `)

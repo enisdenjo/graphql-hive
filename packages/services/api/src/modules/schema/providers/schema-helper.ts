@@ -110,4 +110,16 @@ export class SchemaHelper {
       )
       .digest('hex');
   }
+
+  ensureJSONMetadata(metadata: string | null | undefined): Record<string, any> | null {
+    if (metadata) {
+      try {
+        return JSON.parse(metadata);
+      } catch (e) {
+        throw new Error(`Failed to parse schema metadata JSON: ${e instanceof Error ? e.message : e}`);
+      }
+    }
+
+    return null;
+  }
 }

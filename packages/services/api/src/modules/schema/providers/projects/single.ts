@@ -19,7 +19,17 @@ export class SingleProject {
     private helper: SchemaHelper
   ) {}
 
-  async check({ input, project, currentSchemas }: { project: Project; input: CheckInput; currentSchemas: Schema[] }) {
+  async check({
+    input,
+    project,
+    currentSchemas,
+    experimental_acceptBreakingChanges,
+  }: {
+    project: Project;
+    input: CheckInput;
+    experimental_acceptBreakingChanges: boolean;
+    currentSchemas: Schema[];
+  }) {
     const baseSchema = await this.schemaManager.getBaseSchema({
       organization: input.organization,
       project: input.project,
@@ -34,11 +44,11 @@ export class SingleProject {
     const existingObject = existing ? this.helper.createSchemaObject(SingleSchemaModel.parse(existing)) : null;
 
     const incoming: SingleSchema = {
-      id: 'temp',
-      author: 'temp',
-      commit: 'temp',
+      id: 'temp-single-id',
+      author: 'temp-single-author',
+      commit: 'temp-single-commit',
       target: input.target,
-      date: new Date().toISOString(),
+      date: Date.now(),
       sdl: input.sdl,
     };
     const incomingObject = this.helper.createSchemaObject(incoming);
@@ -58,7 +68,7 @@ export class SingleProject {
         target: input.target,
       },
       baseSchema,
-      experimental_acceptBreakingChanges: false,
+      experimental_acceptBreakingChanges,
       project,
     });
 
@@ -87,17 +97,14 @@ export class SingleProject {
     currentSchemas: Schema[];
     version: string | null;
   }) {
-    const {
-      validationResult,
-      isInitial,
-      artifacts: { schema },
-    } = await this.check({
+    const { validationResult, isInitial, artifacts } = await this.check({
       input: {
         organization: input.organization,
         project: input.project,
         target: input.target,
         sdl: input.sdl,
       },
+      experimental_acceptBreakingChanges: input.experimental_acceptBreakingChanges === true,
       project,
       currentSchemas,
     }).catch(async error => {
@@ -108,12 +115,18 @@ export class SingleProject {
     });
 
     const incoming: SingleSchema = {
-      id: 'new-schema',
+      id: 'temp-single-id',
       author: input.author,
       sdl: input.sdl,
       commit: input.commit,
       target: target.id,
-      date: new Date().toISOString(),
+      date: Date.now(),
+      metadata: this.helper.ensureJSONMetadata(input.metadata),
+    };
+
+    const schema = {
+      before: artifacts.schema.before,
+      after: incoming,
     };
 
     const { changes, errors, valid } = validationResult;

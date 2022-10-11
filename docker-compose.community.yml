@@ -266,7 +266,6 @@ services:
     environment:
       NODE_ENV: production
       TOKENS_ENDPOINT: http://tokens:3003
-      KAFKA_CONNECTION_MODE: 'docker'
       KAFKA_TOPIC: 'usage_reports_v2'
       KAFKA_BROKER: broker:29092
       KAFKA_BUFFER_SIZE: 350
@@ -285,7 +284,6 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      KAFKA_CONNECTION_MODE: 'docker'
       KAFKA_BROKER: broker:29092
       KAFKA_CONCURRENCY: '1'
       KAFKA_CONSUMER_GROUP: 'usage-ingestor-v2'

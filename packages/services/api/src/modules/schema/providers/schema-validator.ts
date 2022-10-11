@@ -55,7 +55,7 @@ export class SchemaValidator {
           if (index === 0) {
             return {
               ...schema,
-              source: (baseSchema || '') + schema.source,
+              raw: (baseSchema || '') + schema.raw,
               document: concatAST([parse(baseSchema || ''), schema.document]),
             };
           } else {

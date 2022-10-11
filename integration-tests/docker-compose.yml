@@ -224,7 +224,6 @@ services:
       POSTGRES_DB: registry
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      ROARR_LOG: 'true'
       CLICKHOUSE_PROTOCOL: 'http'
       CLICKHOUSE_HOST: clickhouse
       CLICKHOUSE_PORT: 8123
@@ -291,7 +290,6 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: registry
-      ROARR_LOG: 'true'
       PORT: 3003
 
   webhooks:
@@ -347,7 +345,6 @@ services:
       NODE_ENV: production
       TOKENS_ENDPOINT: http://tokens:3003
       RATE_LIMIT_ENDPOINT: http://rate-limit:3009
-      KAFKA_CONNECTION_MODE: 'docker'
       KAFKA_TOPIC: 'usage_reports_v2'
       KAFKA_BROKER: broker:29092
       KAFKA_BUFFER_SIZE: 350
@@ -368,7 +365,6 @@ services:
       - 3007:3007
     environment:
       NODE_ENV: production
-      KAFKA_CONNECTION_MODE: 'docker'
       KAFKA_BROKER: broker:29092
       KAFKA_CONCURRENCY: '1'
       KAFKA_CONSUMER_GROUP: 'usage-ingestor-v2'
@@ -393,7 +389,6 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
-      ROARR_LOG: 'true'
       CLICKHOUSE_PROTOCOL: 'http'
       CLICKHOUSE_HOST: 'clickhouse'
       CLICKHOUSE_PORT: '8123'
@@ -427,7 +422,6 @@ services:
       POSTGRES_PASSWORD: postgres
       USAGE_ESTIMATOR_ENDPOINT: http://usage-estimator:3008
       EMAILS_ENDPOINT: http://emails:3011
-      ROARR_LOG: 'true'
       PORT: 3009
 
   stripe-billing:
@@ -451,7 +445,6 @@ services:
       POSTGRES_DB: registry
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      ROARR_LOG: 'true'
       USAGE_ESTIMATOR_ENDPOINT: http://usage-estimator:3008
       PORT: 3010
 

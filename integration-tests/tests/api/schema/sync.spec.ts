@@ -9,7 +9,7 @@ import {
 } from '../../../testkit/flow';
 import { authenticate } from '../../../testkit/auth';
 
-test('marking only the most recent version as valid result in an update of CDN', async () => {
+test('syncing CDN', async () => {
   const { access_token: owner_access_token } = await authenticate('main');
   const orgResult = await createOrganization(
     {

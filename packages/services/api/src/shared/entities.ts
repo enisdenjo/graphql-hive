@@ -15,10 +15,11 @@ export const SingleSchemaModel = z
   .object({
     id: z.string(),
     author: z.string(),
-    date: z.string(),
+    date: z.number(),
     commit: z.string(),
     target: z.string(),
     sdl: z.string(),
+    metadata: z.any().nullish(),
   })
   .required();
 
@@ -28,7 +29,7 @@ export const DeletedCompositeSchemaModel = z
   .object({
     id: z.string(),
     author: z.string(),
-    date: z.string(),
+    date: z.number(),
     commit: z.string(),
     target: z.string(),
     service_name: z.string(),
@@ -42,14 +43,14 @@ export const AddedCompositeSchemaModel = z
   .object({
     id: z.string(),
     author: z.string(),
-    date: z.string(),
+    date: z.number(),
     commit: z.string(),
     target: z.string(),
     sdl: z.string(),
     service_name: z.string(),
     service_url: z.string().nullable(),
     action: z.literal('ADD'),
-    metadata: z.any().optional(),
+    metadata: z.any().nullish(),
   })
   .required();
 
@@ -59,14 +60,14 @@ export const ModifiedCompositeSchemaModel = z
   .object({
     id: z.string(),
     author: z.string(),
-    date: z.string(),
+    date: z.number(),
     commit: z.string(),
     target: z.string(),
     sdl: z.string(),
     service_name: z.string(),
     service_url: z.string().nullable(),
     action: z.literal('MODIFY'),
-    metadata: z.any().optional(),
+    metadata: z.any().nullish(),
   })
   .required();
 

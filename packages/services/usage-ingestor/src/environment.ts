@@ -59,6 +59,8 @@ const ClickHouseModel = zod.object({
   CLICKHOUSE_PORT: NumberFromString,
   CLICKHOUSE_USERNAME: zod.string(),
   CLICKHOUSE_PASSWORD: zod.string(),
+  CLICKHOUSE_CONFIG_ASYNC_INSERT_BUSY_TIMEOUT_MS: emptyString(NumberFromString.optional()),
+  CLICKHOUSE_CONFIG_ASYNC_INSERT_MAX_DATA_SIZE: emptyString(NumberFromString.optional()),
 });
 
 const ClickHouseMirrorModel = zod.union([
@@ -68,6 +70,8 @@ const ClickHouseMirrorModel = zod.union([
     CLICKHOUSE_MIRROR_PORT: NumberFromString,
     CLICKHOUSE_MIRROR_USERNAME: zod.string(),
     CLICKHOUSE_MIRROR_PASSWORD: zod.string(),
+    CLICKHOUSE_MIRROR_CONFIG_ASYNC_INSERT_BUSY_TIMEOUT_MS: emptyString(NumberFromString.optional()),
+    CLICKHOUSE_MIRROR_CONFIG_ASYNC_INSERT_MAX_DATA_SIZE: emptyString(NumberFromString.optional()),
   }),
   zod.object({}),
 ]);
@@ -149,6 +153,8 @@ export const env = {
     port: clickhouse.CLICKHOUSE_PORT,
     username: clickhouse.CLICKHOUSE_USERNAME,
     password: clickhouse.CLICKHOUSE_PASSWORD,
+    async_insert_busy_timeout_ms: clickhouse.CLICKHOUSE_CONFIG_ASYNC_INSERT_BUSY_TIMEOUT_MS,
+    async_insert_max_data_size: clickhouse.CLICKHOUSE_CONFIG_ASYNC_INSERT_MAX_DATA_SIZE,
   },
   clickhouseMirror:
     'CLICKHOUSE_MIRROR_PROTOCOL' in clickhouseMirror
@@ -158,6 +164,8 @@ export const env = {
           port: clickhouseMirror.CLICKHOUSE_MIRROR_PORT,
           username: clickhouseMirror.CLICKHOUSE_MIRROR_USERNAME,
           password: clickhouseMirror.CLICKHOUSE_MIRROR_PASSWORD,
+          async_insert_busy_timeout_ms: clickhouseMirror.CLICKHOUSE_MIRROR_CONFIG_ASYNC_INSERT_BUSY_TIMEOUT_MS,
+          async_insert_max_data_size: clickhouseMirror.CLICKHOUSE_MIRROR_CONFIG_ASYNC_INSERT_MAX_DATA_SIZE,
         }
       : null,
   heartbeat: base.HEARTBEAT_ENDPOINT ? { endpoint: base.HEARTBEAT_ENDPOINT } : null,

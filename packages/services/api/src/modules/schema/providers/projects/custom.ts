@@ -29,14 +29,14 @@ export class CustomProject {
     const schemas = ensureCompositeSchemas(currentSchemas);
     const action = serviceExists(schemas, input.service!) ? 'MODIFY' : 'ADD'; // no DELETE yet
     const incoming: AddedCompositeSchema | ModifiedCompositeSchema = {
-      id: 'temp',
-      author: 'temp',
-      commit: 'temp',
+      id: 'temp-custom-id',
+      author: 'temp-custom-author',
+      commit: 'temp-custom-commit',
       target: input.target,
-      date: new Date().toISOString(),
+      date: Date.now(),
       sdl: input.sdl,
       service_name: input.service!,
-      service_url: 'temp',
+      service_url: 'temp-custom-service-url',
       action,
     };
 

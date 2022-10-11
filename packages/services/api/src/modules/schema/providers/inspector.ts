@@ -57,6 +57,10 @@ export class Inspector {
           selector,
           settings,
           fields,
+        }).catch(error => {
+          this.logger.error(error);
+
+          return Promise.reject(error);
         });
 
         if (!statsList) {
@@ -65,16 +69,17 @@ export class Inspector {
 
         this.logger.debug('Got the stats');
 
-        function useStats({ type, field, argument }: { type: string; field?: string; argument?: string }) {
+        const useStats = ({ type, field, argument }: { type: string; field?: string; argument?: string }) => {
           const stats = statsList!.find(s => s.field === field && s.type === type && s.argument === argument);
 
           if (!stats) {
+            this.logger.debug('Kamil: no stats for %s', [type, field, argument].filter(Boolean).join('.'));
             return NOT_BREAKING;
           }
 
           const aboveThreshold = stats.percentage > settings!.validation.percentage;
           return aboveThreshold ? BREAKING : NOT_BREAKING;
-        }
+        };
 
         return fields.map(useStats);
       },

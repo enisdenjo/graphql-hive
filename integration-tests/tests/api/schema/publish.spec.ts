@@ -1005,23 +1005,7 @@ test('marking only the most recent version as valid result in an update of CDN',
     owner_access_token
   );
 
-  // Join
-  const { access_token: member_access_token } = await authenticate('extra');
   const org = orgResult.body.data!.createOrganization.ok!.createdOrganizationPayload.organization;
-
-  const invitationResult = await inviteToOrganization(
-    {
-      email: 'some@email.com',
-      organization: org.cleanId,
-    },
-    owner_access_token
-  );
-
-  const inviteCode = invitationResult.body.data?.inviteToOrganizationByEmail.ok?.code;
-  expect(inviteCode).toBeDefined();
-
-  await joinOrganization(inviteCode!, member_access_token);
-
   const projectResult = await createProject(
     {
       organization: org.cleanId,
@@ -1132,7 +1116,6 @@ test('marking only the most recent version as valid result in an update of CDN',
   expect(cdnMetadataResult.body).toEqual({ c2: 1 });
 
   // marking the second (not the most recent) version as valid should NOT promote it to be the latest valid version
-  // const updateSchemaVersionStatusResult =
   await updateSchemaVersionStatus(
     {
       organization: org.cleanId,
@@ -1143,7 +1126,6 @@ test('marking only the most recent version as valid result in an update of CDN',
     },
     token
   );
-  // console.log(JSON.stringify(updateSchemaVersionStatusResult));
 
   cdnResult = await fetchSchemaFromCDN(targetSelector, token);
   expect(cdnResult.body.sdl).toContain('tennis');
