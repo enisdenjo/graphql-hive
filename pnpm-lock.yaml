@@ -72,6 +72,7 @@ importers:
       eslint-plugin-import: 2.26.0
       eslint-plugin-simple-import-sort: 7.0.0
       fs-extra: 10.1.0
+      glob: 8.0.3
       graphql: 16.5.0
       husky: 7.0.4
       jest: 28.1.0
@@ -120,6 +121,7 @@ importers:
       eslint-plugin-import: 2.26.0_6lykrgsjl6r2vncmjcievjkgyy
       eslint-plugin-simple-import-sort: 7.0.0_eslint@8.18.0
       fs-extra: 10.1.0
+      glob: 8.0.3
       graphql: 16.5.0
       husky: 7.0.4
       jest: 28.1.0_@types+node@16.11.22
